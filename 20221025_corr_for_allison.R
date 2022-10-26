@@ -6,7 +6,7 @@ library(circlize)
 library(ComplexHeatmap)
 library(dplyr)
 
-#set working directory 
+#set wormatg directory 
 setwd("/Users/eilishmcmaster/Documents/spectral_correlation/")
 
 # read in data where samples are columns and channels are rows
@@ -59,3 +59,24 @@ Heatmap(mat,
 
 # write the matrix to an excel spreadsheet
 write.xlsx(as.data.frame(mat), "correlation_matrix.xlsx", rowNames=TRUE)
+
+
+
+### finding the >0.98 groups
+
+mat2 <- as.data.frame(mat) %>%mutate_all(~replace(.,.<0.98, 0)) #VERY IMPORTANT, removes all of the pairwise connections that are k<0.98
+
+mat3<- as.data.frame(mat2) %>%mutate_all(~replace(.,.>0, 1))
+library(igraph)
+network <- graph_from_adjacency_matrix(as.matrix(mat3), mode="undirected", diag=F, weighted=NULL) #makes the network based on k>0.98 plot(network)
+
+ceb <- cluster_fast_greedy(network) # make the bubbles for the network plot
+
+plot(ceb, network, vertex.label.color="transparent", vertex.size=2, edge.width=0.4) #make the network plot
+
+
+group_df <-as.data.frame(cbind(group=ceb$membership, sample=ceb$names))#get the clones from the network as a df
+group_df$group <- as.numeric(group_df$group)
+
+# write the groups to an excel spreadsheet
+write.xlsx(group_df, "098_groups.xlsx", rowNames=FALSE)
